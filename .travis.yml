@@ -2,10 +2,14 @@ before_deploy: git config --global user.email publish@travis.github && git confi
 language: node_js
 node_js:
   - "8"
-branches:
-  only:
-    - master
-github-token: $GITHUB_TOKEN 
-provider: pages
 script:
+  - npm run build
+deploy:
+  provider: pages
+  skip-cleanup: true
+  github-token: $GITHUB_TOKEN  # Set in the settings page of your repository, as a secure variable
+  keep-history: true
+  on:
+    branch: master
+  script:
   - npm run deploy
