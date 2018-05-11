@@ -1,7 +1,7 @@
 import React from 'react';
-import debounce from 'lodash';
 import Button from 'antd/lib/button';
-import { InputNumber, Menu, Dropdown, Icon } from 'antd';
+import presets from '../util/presets';
+import { InputNumber, Menu, Dropdown, Icon, Tooltip } from 'antd';
 
 
 class Game extends React.Component {
@@ -20,73 +20,12 @@ class Game extends React.Component {
 				{ x: 26, y: 27 },
 				{ x: 25, y: 28 },
 			],
-			presets: [
-				{
-					displayName: 'Empty',
-					name: 'empty',
-					cells: [
-
-					]
-				},
-				{
-					displayName: 'Glider',
-					name: 'glider',
-					cells:
-						[
-							{ x: 1, y: 0 },
-							{ x: 2, y: 1 },
-							{ x: 0, y: 2 },
-							{ x: 1, y: 2 },
-							{ x: 2, y: 2 }
-						]
-				}, {
-					displayName: 'Small Explorer',
-					name: 'smallExplorer',
-					cells:
-						[
-							{ x: 25, y: 25 },
-							{ x: 24, y: 26 },
-							{ x: 25, y: 26 },
-							{ x: 26, y: 26 },
-							{ x: 24, y: 27 },
-							{ x: 26, y: 27 },
-							{ x: 25, y: 28 },
-						]
-				},
-				{
-					displayName: 'Tumbler',
-					name: 'tumbler',
-					cells:
-						[
-							{ x: 23, y: 25 },
-							{ x: 24, y: 25 },
-							{ x: 26, y: 25 },
-							{ x: 27, y: 25 },
-							{ x: 23, y: 26 },
-							{ x: 24, y: 26 },
-							{ x: 26, y: 26 },
-							{ x: 27, y: 26 },
-							{ x: 24, y: 27 },
-							{ x: 26, y: 27 },
-							{ x: 22, y: 28 },
-							{ x: 24, y: 28 },
-							{ x: 26, y: 28 },
-							{ x: 28, y: 28 },
-							{ x: 22, y: 29 },
-							{ x: 24, y: 29 },
-							{ x: 26, y: 29 },
-							{ x: 28, y: 29 },
-							{ x: 22, y: 30 },
-							{ x: 23, y: 30 },
-							{ x: 27, y: 30 },
-							{ x: 28, y: 30 },
-						]
-				}
-			],
-			running: false,
-			intervalId: -1,
+			presets: presets,		// game templates
+			running: false,			// loop status
+			intervalId: -1,			// used to store game loop intervall
 		}
 
+		// function binding
 		this.nextStep = this.nextStep.bind(this);
 		this.findAliveCell = this.findAliveCell.bind(this);
 		this.mod = this.mod.bind(this);
@@ -106,7 +45,7 @@ class Game extends React.Component {
 
 	resetCells() {
 		this.setState((state, props) => ({
-			cells: state.presets[0]
+			cells: state.presets[0].cells
 		}))
 	}
 
@@ -123,7 +62,6 @@ class Game extends React.Component {
 			emptyCells = emptyCells.concat(result.deadNeighbours);
 
 			if (aliveNeighbours === 2 || aliveNeighbours === 3) {
-				//console.log(`Neighbours: ${aliveNeighbours} adding ${JSON.stringify(cell)}`);
 
 				// cell already in new cell?				
 				if (newCells.findIndex(item => item.x === cell.x && item.y === cell.y) === -1) {
@@ -154,11 +92,13 @@ class Game extends React.Component {
 		return this.state.cells.find(cell => { return cell.x === x && cell.y === y });
 	}
 
+	// counts all active neighbours, and also provides all inactive neighbours for further calculations
 	getNeighboursCount(cell) {
 
 		let aliveNeighbours = 0;
 		let deadNeighbours = [];
 
+		// iterate 3 X 3 grid around cell
 		for (let x = -1; x <= 1; x++) {
 			for (let y = -1; y <= 1; y++) {
 				if (x === 0 && y === 0) {
@@ -179,6 +119,7 @@ class Game extends React.Component {
 
 	render() {
 
+		// grid which is rendered
 		let grid = [];
 
 		for (let y = 0; y < this.state.rows; y++) {
@@ -199,6 +140,7 @@ class Game extends React.Component {
 			}
 		}
 
+		// generate preset selection
 		const presets = (
 			<Menu>
 				{this.state.presets.map((preset, idx) => {
@@ -228,6 +170,12 @@ class Game extends React.Component {
 					<Dropdown overlay={presets}>
 						<Button style={{ marginLeft: 8 }}>Load Preset <Icon type="up" /></Button>
 					</Dropdown>
+					<Tooltip title="More Information" placement="left">
+						<Button style={{
+							right: 10,
+							position: 'absolute'
+						}} shape="circle" size="large" icon="info" target="_blank" href="https://github.com/Freshchris01/game-of-life-react" />
+					</Tooltip>
 				</div>
 			</div>
 		);
@@ -242,13 +190,16 @@ class Game extends React.Component {
 		if (value < 5 || value > 50) {
 			return;
 		}
-		this.setState((state, props) => {
-			return {
-				...state,
-				rows: value,
-			}
+
+		let newCells = [];
+		this.state.cells.map((cell) => {
+			newCells.push({ x: cell.x, y: this.mod(cell.y, value) })
 		});
-		this.resetCells();
+
+		this.setState((state, props) => ({
+			rows: value,
+			cells: newCells
+		}))
 	}
 
 	updateCols(value) {
@@ -260,11 +211,16 @@ class Game extends React.Component {
 		if (value < 5 || value > 50) {
 			return;
 		}
+
+		let newCells = [];
+		this.state.cells.map((cell) => {
+			newCells.push({ x: this.mod(cell.x, value), y: cell.y })
+		});
+
 		this.setState((state, props) => ({
 			cols: value,
+			cells: newCells
 		}))
-
-		this.resetCells();
 	}
 
 	// set and clear loop
