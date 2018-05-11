@@ -7,15 +7,26 @@ class Game extends React.Component {
 		super(props);
 
 		this.state = {
-			cols: 10,
-			rows: 10,
+			cols: 5,
+			rows: 5,
 			cells: [
 				{ x: 1, y: 0 },
 				{ x: 2, y: 1 },
 				{ x: 0, y: 2 },
 				{ x: 1, y: 2 },
-				{ x: 2, y: 2 },
-
+				{ x: 2, y: 2 }
+			],
+			presets: [
+				[
+					{ x: 1, y: 0 },
+					{ x: 2, y: 1 },
+					{ x: 0, y: 2 },
+					{ x: 1, y: 2 },
+					{ x: 2, y: 2 }
+				],
+				[
+					{ x: 0, y: 0 },
+				]
 			],
 			running: false,
 			intervalId: -1,
@@ -27,10 +38,18 @@ class Game extends React.Component {
 		this.updateCols = this.updateCols.bind(this);
 		this.updateRows = this.updateRows.bind(this);
 		this.togglePlayPause = this.togglePlayPause.bind(this);
+		this.resetCells = this.resetCells.bind(this);
 	}
 
+	// real modulo function, also for negative nubmers
 	mod(n, m) {
 		return ((n % m) + m) % m;
+	}
+
+	resetCells() {
+		this.setState((state, props) => ({
+			cells: state.presets[0]
+		}))
 	}
 
 	nextStep() {
@@ -51,14 +70,14 @@ class Game extends React.Component {
 						}
 
 						// if grid is active cell
-						if (this.findAliveCell(this.mod(gridX + x, this.state.cols), this.mod((gridY + y), this.state.cols)) !== undefined) {
+						if (this.findAliveCell(this.mod(gridX + x, this.state.cols), this.mod((gridY + y), this.state.rows)) !== undefined) {
 							aliveNeighbours++;
 						}
 					}
 
 				}
 				if (currentCell && (aliveNeighbours === 2 || aliveNeighbours === 3)) {
-					console.log(`Neighbours: ${aliveNeighbours}`);
+					console.log(`Neighbours: ${aliveNeighbours} adding ${JSON.stringify(currentCell)}`);
 					newCells.push(currentCell);
 				}
 
@@ -68,15 +87,14 @@ class Game extends React.Component {
 				}
 			}
 		}
-
+		console.log(newCells);
 		this.setState((state, props) => {
 			return { ...state, cells: newCells }
 		});
 	}
 
 	findAliveCell(x, y) {
-		let cell = this.state.cells.find(cell => { return cell.x === x && cell.y === y });
-		return cell;
+		return this.state.cells.find(cell => { return cell.x === x && cell.y === y });
 	}
 
 	render() {
@@ -125,23 +143,26 @@ class Game extends React.Component {
 		this.setState((state, props) => {
 			return {
 				...state,
-				rows: e.target.value
+				rows: e.target.value,
 			}
 		});
+		this.resetCells();
 	}
 
 	updateCols(e) {
 		e.persist();
 		this.setState((state, props) => ({
-			cols: e.target.value
+			cols: e.target.value,
 		}))
+
+		this.resetCells();
 	}
 
 	// set and clear loop
 	togglePlayPause() {
 		let intervalId = -1;
 		if (!this.state.running) {
-			intervalId = setInterval(this.nextStep, 1000);
+			intervalId = setInterval(this.nextStep, 500);
 		} else {
 			clearInterval(this.state.intervalId);
 		}
