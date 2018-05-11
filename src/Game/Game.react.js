@@ -1,7 +1,7 @@
 import React from 'react';
 import debounce from 'lodash';
 import Button from 'antd/lib/button';
-import { InputNumber } from 'antd';
+import { InputNumber, Menu, Dropdown, Icon } from 'antd';
 
 
 class Game extends React.Component {
@@ -21,27 +21,67 @@ class Game extends React.Component {
 				{ x: 25, y: 28 },
 			],
 			presets: [
-				// glider
-				[
-					{ x: 1, y: 0 },
-					{ x: 2, y: 1 },
-					{ x: 0, y: 2 },
-					{ x: 1, y: 2 },
-					{ x: 2, y: 2 }
-				],
-				// small explorer
-				[
-					{ x: 25, y: 25 },
-					{ x: 24, y: 26 },
-					{ x: 25, y: 26 },
-					{ x: 26, y: 26 },
-					{ x: 24, y: 27 },
-					{ x: 26, y: 27 },
-					{ x: 25, y: 28 },
-				],
-				[
-					{ x: 0, y: 0 },
-				]
+				{
+					displayName: 'Empty',
+					name: 'empty',
+					cells: [
+
+					]
+				},
+				{
+					displayName: 'Glider',
+					name: 'glider',
+					cells:
+						[
+							{ x: 1, y: 0 },
+							{ x: 2, y: 1 },
+							{ x: 0, y: 2 },
+							{ x: 1, y: 2 },
+							{ x: 2, y: 2 }
+						]
+				}, {
+					displayName: 'Small Explorer',
+					name: 'smallExplorer',
+					cells:
+						[
+							{ x: 25, y: 25 },
+							{ x: 24, y: 26 },
+							{ x: 25, y: 26 },
+							{ x: 26, y: 26 },
+							{ x: 24, y: 27 },
+							{ x: 26, y: 27 },
+							{ x: 25, y: 28 },
+						]
+				},
+				{
+					displayName: 'Tumbler',
+					name: 'tumbler',
+					cells:
+						[
+							{ x: 23, y: 25 },
+							{ x: 24, y: 25 },
+							{ x: 26, y: 25 },
+							{ x: 27, y: 25 },
+							{ x: 23, y: 26 },
+							{ x: 24, y: 26 },
+							{ x: 26, y: 26 },
+							{ x: 27, y: 26 },
+							{ x: 24, y: 27 },
+							{ x: 26, y: 27 },
+							{ x: 22, y: 28 },
+							{ x: 24, y: 28 },
+							{ x: 26, y: 28 },
+							{ x: 28, y: 28 },
+							{ x: 22, y: 29 },
+							{ x: 24, y: 29 },
+							{ x: 26, y: 29 },
+							{ x: 28, y: 29 },
+							{ x: 22, y: 30 },
+							{ x: 23, y: 30 },
+							{ x: 27, y: 30 },
+							{ x: 28, y: 30 },
+						]
+				}
 			],
 			running: false,
 			intervalId: -1,
@@ -55,6 +95,8 @@ class Game extends React.Component {
 		this.togglePlayPause = this.togglePlayPause.bind(this);
 		this.resetCells = this.resetCells.bind(this);
 		this.getNeighboursCount = this.getNeighboursCount.bind(this);
+		this.loadPreset = this.loadPreset.bind(this);
+		this.toggleCell = this.toggleCell.bind(this);
 	}
 
 	// real modulo function, also for negative nubmers
@@ -81,7 +123,7 @@ class Game extends React.Component {
 			emptyCells = emptyCells.concat(result.deadNeighbours);
 
 			if (aliveNeighbours === 2 || aliveNeighbours === 3) {
-				console.log(`Neighbours: ${aliveNeighbours} adding ${JSON.stringify(cell)}`);
+				//console.log(`Neighbours: ${aliveNeighbours} adding ${JSON.stringify(cell)}`);
 
 				// cell already in new cell?				
 				if (newCells.findIndex(item => item.x === cell.x && item.y === cell.y) === -1) {
@@ -103,8 +145,6 @@ class Game extends React.Component {
 			}
 		});
 
-
-		console.log(newCells);
 		this.setState((state, props) => {
 			return { ...state, cells: newCells }
 		});
@@ -145,34 +185,49 @@ class Game extends React.Component {
 			grid.push([]);
 			for (let x = 0; x < this.state.cols; x++) {
 				let position = {
-					left: `${10 * x}px`,
-					top: `${10 * y}px`,
+					left: `${15 * x}px`,
+					top: `${15 * y}px`,
 					position: 'absolute',
-					backgroundColor: this.findAliveCell(x, y) ? 'green' : 'red'
+					backgroundColor: this.findAliveCell(x, y) ? '#2c3e50' : '#95a5a6'
 				};
 				grid[y].push(
 					<div key={x + "" + y}
+						onClick={() => this.toggleCell(x, y)}
 						style={{ ...style.cell, ...style.alive, ...position }}>
 					</div>
 				);
 			}
 		}
 
+		const presets = (
+			<Menu>
+				{this.state.presets.map((preset, idx) => {
+					return (
+						<Menu.Item key={`preset${idx}`}>
+							<a onClick={() => this.loadPreset(idx)}>{preset.displayName}</a>
+						</Menu.Item>
+					);
+				})}
+			</Menu>
+		);
+
 		return (
 			<div style={style.container}>
 				{grid}
 				<div style={style.controls}>
 					<div>
-						<label>Rows</label>
+						<label style={{ marginRight: '15px' }}>Rows</label>
 						<InputNumber value={this.state.rows} onChange={this.updateRows} min={5} max={50} />
 					</div>
-					<div>
-						<label>Cols</label>
+					<div style={{ marginTop: '5px' }}>
+						<label style={{ marginRight: '15px' }}>Cols</label>
 						<InputNumber value={this.state.cols} onChange={this.updateCols} min={5} max={50} />
 					</div>
-					<Button onClick={this.nextStep} style={{ display: this.state.running ? 'none' : 'inline-block' }}>Next step</Button>
-					<Button onClick={this.togglePlayPause}>{this.state.running ? 'Pause' : 'Play'}</Button>
-
+					<Button onClick={this.nextStep} style={{ display: this.state.running ? 'none' : 'inline-block' }}>Next step <Icon type="double-right" /></Button>
+					<Button onClick={this.togglePlayPause} style={{ marginTop: '10px', marginLeft: 8 }}>{this.state.running ? 'Pause' : 'Play'}</Button>
+					<Dropdown overlay={presets}>
+						<Button style={{ marginLeft: 8 }}>Load Preset <Icon type="up" /></Button>
+					</Dropdown>
 				</div>
 			</div>
 		);
@@ -225,6 +280,27 @@ class Game extends React.Component {
 			intervalId: intervalId
 		}))
 	}
+
+	loadPreset(id) {
+		this.setState((state, props) => ({
+			cells: state.presets[id].cells
+		}));
+	}
+
+	toggleCell(x, y) {
+
+		let cellIndex = this.state.cells.findIndex(item => item.x === x && item.y === y);
+
+		if (cellIndex === -1) { // insert
+			this.setState((state, props) => ({
+				cells: [...state.cells, { x: x, y: y }]
+			}));
+		} else {				// remove
+			this.setState((state, props) => ({
+				cells: state.cells.filter(cell => { return !(cell.x === x && cell.y === y) })
+			}));
+		}
+	}
 }
 const style = {
 
@@ -236,13 +312,13 @@ const style = {
 	controls: {
 		position: 'absolute',
 		bottom: '30px',
-		left: '30px'
+		width: '100vw'
 	},
 
 	cell: {
-		height: '10px',
-		width: '10px',
-		border: '1px solid black'
+		height: '15px',
+		width: '15px',
+		border: '1px solid rgba(132, 132, 132, 0.15)'
 	},
 
 	alive: {
