@@ -1,5 +1,7 @@
 import React from 'react';
-
+import debounce from 'lodash';
+import Button from 'antd/lib/button';
+import { InputNumber } from 'antd';
 
 
 class Game extends React.Component {
@@ -7,22 +9,35 @@ class Game extends React.Component {
 		super(props);
 
 		this.state = {
-			cols: 5,
-			rows: 5,
+			cols: 50,
+			rows: 50,
 			cells: [
-				{ x: 1, y: 0 },
-				{ x: 2, y: 1 },
-				{ x: 0, y: 2 },
-				{ x: 1, y: 2 },
-				{ x: 2, y: 2 }
+				{ x: 25, y: 25 },
+				{ x: 24, y: 26 },
+				{ x: 25, y: 26 },
+				{ x: 26, y: 26 },
+				{ x: 24, y: 27 },
+				{ x: 26, y: 27 },
+				{ x: 25, y: 28 },
 			],
 			presets: [
+				// glider
 				[
 					{ x: 1, y: 0 },
 					{ x: 2, y: 1 },
 					{ x: 0, y: 2 },
 					{ x: 1, y: 2 },
 					{ x: 2, y: 2 }
+				],
+				// small explorer
+				[
+					{ x: 25, y: 25 },
+					{ x: 24, y: 26 },
+					{ x: 25, y: 26 },
+					{ x: 26, y: 26 },
+					{ x: 24, y: 27 },
+					{ x: 26, y: 27 },
+					{ x: 25, y: 28 },
 				],
 				[
 					{ x: 0, y: 0 },
@@ -39,6 +54,7 @@ class Game extends React.Component {
 		this.updateRows = this.updateRows.bind(this);
 		this.togglePlayPause = this.togglePlayPause.bind(this);
 		this.resetCells = this.resetCells.bind(this);
+		this.getNeighboursCount = this.getNeighboursCount.bind(this);
 	}
 
 	// real modulo function, also for negative nubmers
@@ -54,39 +70,40 @@ class Game extends React.Component {
 
 	nextStep() {
 		let newCells = [];
+		let emptyCells = [];
 
-		// foreach grid
-		for (let gridX = 0; gridX < this.state.cols; gridX++) {
-			for (let gridY = 0; gridY < this.state.rows; gridY++) {
+		// foreach active cell
+		this.state.cells.map((cell, idx) => {
 
-				let currentCell = this.findAliveCell(gridX, gridY);
+			//calculate neighbours
+			let result = this.getNeighboursCount(cell);
+			let aliveNeighbours = result.count;
+			emptyCells = emptyCells.concat(result.deadNeighbours);
 
-				//calculate neighbours
-				let aliveNeighbours = 0;
-				for (let x = -1; x <= 1; x++) {
-					for (let y = -1; y <= 1; y++) {
-						if (x === 0 && y === 0) {
-							continue;
-						}
+			if (aliveNeighbours === 2 || aliveNeighbours === 3) {
+				console.log(`Neighbours: ${aliveNeighbours} adding ${JSON.stringify(cell)}`);
 
-						// if grid is active cell
-						if (this.findAliveCell(this.mod(gridX + x, this.state.cols), this.mod((gridY + y), this.state.rows)) !== undefined) {
-							aliveNeighbours++;
-						}
-					}
-
-				}
-				if (currentCell && (aliveNeighbours === 2 || aliveNeighbours === 3)) {
-					console.log(`Neighbours: ${aliveNeighbours} adding ${JSON.stringify(currentCell)}`);
-					newCells.push(currentCell);
-				}
-
-				if (!currentCell && (aliveNeighbours === 3)) {
-					newCells.push({ x: gridX, y: gridY });
-					console.log('Neighbours: ' + aliveNeighbours);
+				// cell already in new cell?				
+				if (newCells.findIndex(item => item.x === cell.x && item.y === cell.y) === -1) {
+					newCells.push(cell);
 				}
 			}
-		}
+		});
+
+		// for all empty cells around active cells
+		emptyCells.map((cell, idx) => {
+			let aliveNeighbours = this.getNeighboursCount(cell).count;
+
+			if (aliveNeighbours === 3) {
+
+				// cell already in new cell?
+				if (newCells.findIndex(item => item.x === cell.x && item.y === cell.y) === -1) {
+					newCells.push(cell);
+				}
+			}
+		});
+
+
 		console.log(newCells);
 		this.setState((state, props) => {
 			return { ...state, cells: newCells }
@@ -97,6 +114,29 @@ class Game extends React.Component {
 		return this.state.cells.find(cell => { return cell.x === x && cell.y === y });
 	}
 
+	getNeighboursCount(cell) {
+
+		let aliveNeighbours = 0;
+		let deadNeighbours = [];
+
+		for (let x = -1; x <= 1; x++) {
+			for (let y = -1; y <= 1; y++) {
+				if (x === 0 && y === 0) {
+					continue;
+				}
+
+				// if grid is active cell
+				if (this.findAliveCell(this.mod(cell.x + x, this.state.cols), this.mod((cell.y + y), this.state.rows)) !== undefined) {
+					aliveNeighbours++;
+				} else {
+					deadNeighbours.push({ x: this.mod(cell.x + x, this.state.cols), y: this.mod((cell.y + y), this.state.rows) });
+				}
+			}
+		}
+
+		return { count: aliveNeighbours, deadNeighbours: deadNeighbours };
+	}
+
 	render() {
 
 		let grid = [];
@@ -105,14 +145,14 @@ class Game extends React.Component {
 			grid.push([]);
 			for (let x = 0; x < this.state.cols; x++) {
 				let position = {
-					left: `${40 * x}px`,
-					top: `${40 * y}px`,
+					left: `${10 * x}px`,
+					top: `${10 * y}px`,
 					position: 'absolute',
 					backgroundColor: this.findAliveCell(x, y) ? 'green' : 'red'
 				};
 				grid[y].push(
 					<div key={x + "" + y}
-						style={{ ...style.cell, ...style.alive, ...position }}>{x} - {y}
+						style={{ ...style.cell, ...style.alive, ...position }}>
 					</div>
 				);
 			}
@@ -122,37 +162,51 @@ class Game extends React.Component {
 			<div style={style.container}>
 				{grid}
 				<div style={style.controls}>
-					<p>
+					<div>
 						<label>Rows</label>
-						<input type="number" value={this.state.rows} onChange={this.updateRows} />
-					</p>
-					<p>
+						<InputNumber value={this.state.rows} onChange={this.updateRows} min={5} max={50} />
+					</div>
+					<div>
 						<label>Cols</label>
-						<input type="number" value={this.state.cols} onChange={this.updateCols} />
-					</p>
-					<button onClick={this.nextStep} style={{ display: this.state.running ? 'none' : 'inline-block' }}>Next step</button>
-					<button onClick={this.togglePlayPause}>{this.state.running ? 'Pause' : 'Play'}</button>
+						<InputNumber value={this.state.cols} onChange={this.updateCols} min={5} max={50} />
+					</div>
+					<Button onClick={this.nextStep} style={{ display: this.state.running ? 'none' : 'inline-block' }}>Next step</Button>
+					<Button onClick={this.togglePlayPause}>{this.state.running ? 'Pause' : 'Play'}</Button>
 
 				</div>
 			</div>
 		);
 	}
 
-	updateRows(e) {
-		e.persist();
+	updateRows(value) {
+		// integer check
+		if (value !== parseInt(value, 10)) {
+			return;
+		}
+
+		if (value < 5 || value > 50) {
+			return;
+		}
 		this.setState((state, props) => {
 			return {
 				...state,
-				rows: e.target.value,
+				rows: value,
 			}
 		});
 		this.resetCells();
 	}
 
-	updateCols(e) {
-		e.persist();
+	updateCols(value) {
+		// integer check
+		if (value !== parseInt(value, 10)) {
+			return;
+		}
+
+		if (value < 5 || value > 50) {
+			return;
+		}
 		this.setState((state, props) => ({
-			cols: e.target.value,
+			cols: value,
 		}))
 
 		this.resetCells();
@@ -176,7 +230,7 @@ const style = {
 
 	container: {
 		position: 'relative',
-		margin: '0 auto'
+		//margin: '0 auto'
 	},
 
 	controls: {
@@ -186,8 +240,8 @@ const style = {
 	},
 
 	cell: {
-		height: '40px',
-		width: '40px',
+		height: '10px',
+		width: '10px',
 		border: '1px solid black'
 	},
 
