@@ -2,7 +2,7 @@
  * Presets to select from the dropdown
  */
 
-export default presets = [
+export default [
 	{
 		displayName: 'Empty',
 		name: 'empty',

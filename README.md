@@ -20,4 +20,4 @@ If you find any bugs just open an issue or if you have feedback please [contact 
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE) file for details.

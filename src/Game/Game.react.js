@@ -134,6 +134,7 @@ class Game extends React.Component {
 				grid[y].push(
 					<div key={x + "" + y}
 						onClick={() => this.toggleCell(x, y)}
+
 						style={{ ...style.cell, ...style.alive, ...position }}>
 					</div>
 				);
@@ -155,7 +156,13 @@ class Game extends React.Component {
 
 		return (
 			<div style={style.container}>
-				{grid}
+				<div style={{
+					...style.gridContainer,
+					width: 15 * this.state.cols,
+					height: 15 * this.state.rows,
+				}}>
+					{grid}
+				</div>
 				<div style={style.controls}>
 					<div>
 						<label style={{ marginRight: '15px' }}>Rows</label>
@@ -227,7 +234,7 @@ class Game extends React.Component {
 	togglePlayPause() {
 		let intervalId = -1;
 		if (!this.state.running) {
-			intervalId = setInterval(this.nextStep, 500);
+			intervalId = setInterval(this.nextStep, 50);
 		} else {
 			clearInterval(this.state.intervalId);
 		}
@@ -261,8 +268,14 @@ class Game extends React.Component {
 const style = {
 
 	container: {
+		width: '100%'
+	},
+
+	gridContainer: {
 		position: 'relative',
-		//margin: '0 auto'
+		margin: '0 auto',
+		boxShadow: '0px 1px 5px black',
+		marginTop: 10
 	},
 
 	controls: {
