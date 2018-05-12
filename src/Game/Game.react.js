@@ -3,7 +3,6 @@ import Button from 'antd/lib/button';
 import presets from '../util/presets';
 import { InputNumber, Menu, Dropdown, Icon, Tooltip } from 'antd';
 
-
 class Game extends React.Component {
 	constructor(props) {
 		super(props);
@@ -50,6 +49,7 @@ class Game extends React.Component {
 	}
 
 	nextStep() {
+
 		let newCells = [];
 		let emptyCells = [];
 
@@ -86,6 +86,7 @@ class Game extends React.Component {
 		this.setState((state, props) => {
 			return { ...state, cells: newCells }
 		});
+
 	}
 
 	findAliveCell(x, y) {
