@@ -1,7 +1,8 @@
 import React from 'react';
 import Button from 'antd/lib/button';
 import presets from '../util/presets';
-import { InputNumber, Menu, Dropdown, Icon, Tooltip } from 'antd';
+import { InputNumber, Menu, Dropdown, Icon, Tooltip, Slider } from 'antd';
+const ButtonGroup = Button.Group;
 
 class Game extends React.Component {
 	constructor(props) {
@@ -22,6 +23,7 @@ class Game extends React.Component {
 			presets: presets,		// game templates
 			running: false,			// loop status
 			intervalId: -1,			// used to store game loop intervall
+			loopTime: 100			// loop time in milliseconds
 		}
 
 		// function binding
@@ -35,6 +37,7 @@ class Game extends React.Component {
 		this.getNeighboursCount = this.getNeighboursCount.bind(this);
 		this.loadPreset = this.loadPreset.bind(this);
 		this.toggleCell = this.toggleCell.bind(this);
+		this.updateLoopTime = this.updateLoopTime.bind(this);
 	}
 
 	// real modulo function, also for negative nubmers
@@ -178,6 +181,15 @@ class Game extends React.Component {
 					<Dropdown overlay={presets}>
 						<Button style={{ marginLeft: 8 }}>Load Preset <Icon type="up" /></Button>
 					</Dropdown>
+					<ButtonGroup>
+						<Button style={{ marginLeft: 8 }} onClick={() => this.updateLoopTime(-10)}>
+							<Icon type="minus" />Slower
+      					</Button>
+						<Button onClick={() => this.updateLoopTime(10)}>
+							Faster<Icon type="plus" />
+						</Button>
+					</ButtonGroup>
+					<Slider step={100} min={100} max={1000} onChange={this.updateLoopTime} value={this.state.loopTime} />
 					<Tooltip title="More Information" placement="left">
 						<Button style={{
 							right: 10,
@@ -235,7 +247,7 @@ class Game extends React.Component {
 	togglePlayPause() {
 		let intervalId = -1;
 		if (!this.state.running) {
-			intervalId = setInterval(this.nextStep, 50);
+			intervalId = setInterval(this.nextStep, this.state.loopTime);
 		} else {
 			clearInterval(this.state.intervalId);
 		}
@@ -248,6 +260,16 @@ class Game extends React.Component {
 	loadPreset(id) {
 		this.setState((state, props) => ({
 			cells: state.presets[id].cells
+		}));
+	}
+
+	updateLoopTime(value) {
+		value = parseInt(value);
+
+		// set new loopTime
+		this.setState((state, props) => ({
+			loopTime: value,
+			running: false
 		}));
 	}
 
