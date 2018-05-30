@@ -182,14 +182,13 @@ class Game extends React.Component {
 						<Button style={{ marginLeft: 8 }}>Load Preset <Icon type="up" /></Button>
 					</Dropdown>
 					<ButtonGroup>
-						<Button style={{ marginLeft: 8 }} onClick={() => this.updateLoopTime(-10)}>
+						<Button style={{ marginLeft: 8 }} disabled={this.state.loopTime > 1000} onClick={() => this.updateLoopTime(100)}>
 							<Icon type="minus" />Slower
       					</Button>
-						<Button onClick={() => this.updateLoopTime(10)}>
+						<Button disabled={this.state.loopTime <= 100} onClick={() => this.updateLoopTime(-100)}>
 							Faster<Icon type="plus" />
 						</Button>
 					</ButtonGroup>
-					<Slider step={100} min={100} max={1000} onChange={this.updateLoopTime} value={this.state.loopTime} />
 					<Tooltip title="More Information" placement="left">
 						<Button style={{
 							right: 10,
@@ -264,12 +263,19 @@ class Game extends React.Component {
 	}
 
 	updateLoopTime(value) {
-		value = parseInt(value);
-
+		value = this.state.loopTime + parseInt(value);
+		let running = false;
+		let intervalId = -1;
+		if (this.state.running) {
+			intervalId = setInterval(this.nextStep, value);
+			clearInterval(this.state.intervalId);
+			running = true;
+		}
 		// set new loopTime
 		this.setState((state, props) => ({
 			loopTime: value,
-			running: false
+			running: running,
+			intervalId: intervalId
 		}));
 	}
 
